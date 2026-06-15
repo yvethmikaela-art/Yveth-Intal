@@ -78,3 +78,4 @@ class UserModel extends Model
         return $result ?: null;
     }
 }
+
