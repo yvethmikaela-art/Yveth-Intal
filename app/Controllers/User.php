@@ -61,7 +61,7 @@ class User extends ResourceController
 
     // ---------------------------------------------------------------
     // POST /user/login
-    // Calls: sp_login
+    // Calls: sp_login, sp_save_token
     // ---------------------------------------------------------------
     public function login()
     {
@@ -95,27 +95,54 @@ class User extends ResourceController
         // --- Step 2: Generate simple token ---
         $token = bin2hex(random_bytes(20));
 
+        // --- Step 3: Save token via sp_save_token ---
+        $userModel->saveToken($user['id'], $token);
+
         return $this->respond([
             'status'       => 'ok',
             'message'      => 'Login successful!',
             'access_token' => $token,
             'user'         => [
                 'id'         => $user['id'],
-                'first_name' => $user['first_name'],
-                'last_name'  => $user['last_name'],
+                'first_name' => $user['firstname'],
+                'last_name'  => $user['lastname'],
                 'email'      => $user['email'],
             ],
         ], 200);
     }
 
     // ---------------------------------------------------------------
-    // GET /user
+    // GET /user?token=xxx
+    // Requires valid login token (sp_verify_token)
     // Returns all users
     // ---------------------------------------------------------------
-    public function index()
+   public function index()
     {
+        // --- Get token from Authorization header: "Bearer xxx" ---
+        $authHeader = $this->request->getHeaderLine('Authorization');
+
+        if (empty($authHeader) || !preg_match('/Bearer\s+(.+)/i', $authHeader, $matches)) {
+            return $this->respond([
+                'status'  => 'error',
+                'message' => 'Token is required!',
+            ], 401);
+        }
+
+        $token = $matches[1];
+
         $userModel = new UserModel();
-        $users     = $userModel->getAllUsers();
+
+        // --- Verify token via sp_verify_token ---
+        $valid = $userModel->verifyToken($token);
+
+        if (!$valid) {
+            return $this->respond([
+                'status'  => 'error',
+                'message' => 'Invalid or expired token!',
+            ], 401);
+        }
+
+        $users = $userModel->getAllUsers();
 
         return $this->respond([
             'status' => 'ok',
@@ -129,8 +156,31 @@ class User extends ResourceController
     // ---------------------------------------------------------------
     public function show($id = null)
     {
+        // --- Get token from Authorization header: "Bearer xxx" ---
+        $authHeader = $this->request->getHeaderLine('Authorization');
+
+        if (empty($authHeader) || !preg_match('/Bearer\s+(.+)/i', $authHeader, $matches)) {
+            return $this->respond([
+                'status'  => 'error',
+                'message' => 'Token is required!',
+            ], 401);
+        }
+
+        $token = $matches[1];
+
         $userModel = new UserModel();
-        $user      = $userModel->getUserById($id);
+
+        // --- Verify token via sp_verify_token ---
+        $valid = $userModel->verifyToken($token);
+
+        if (!$valid) {
+            return $this->respond([
+                'status'  => 'error',
+                'message' => 'Invalid or expired token!',
+            ], 401);
+        }
+
+        $user = $userModel->getUserById($id);
 
         if (!$user) {
             return $this->respond([
