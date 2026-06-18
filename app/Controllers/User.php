@@ -19,10 +19,13 @@ class User extends ResourceController
 
         // --- Input validation ---
         $rules = [
-            'first_name' => 'required|min_length[2]',
-            'last_name'  => 'required|min_length[2]',
-            'email'      => 'required|valid_email',
-            'password'   => 'required|min_length[6]',
+            'first_name'      => 'required|min_length[2]',
+            'last_name'       => 'required|min_length[2]',
+            'email'           => 'required|valid_email',
+            'phone_number'    => 'required|min_length[7]',
+            'address'         => 'required|min_length[5]',
+            'password'        => 'required|min_length[6]',
+            'terms_accepted'  => 'required',
         ];
 
         if (!$this->validateData($json ?? [], $rules)) {
@@ -49,7 +52,10 @@ class User extends ResourceController
             $json['first_name'],
             $json['last_name'],
             $json['email'],
-            $json['password']
+            $json['phone_number'],
+            $json['address'],
+            $json['password'],
+            (bool) $json['terms_accepted']
         );
 
         return $this->respond([

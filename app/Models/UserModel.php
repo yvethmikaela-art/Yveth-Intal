@@ -28,16 +28,27 @@ class UserModel extends Model
         string $firstName,
         string $lastName,
         string $email,
-        string $password
+        string $phoneNumber,
+        string $address,
+        string $password,
+        bool $termsAccepted
     ): array {
         // Hash the password before storing
         $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
 
+        // Consolidate into a single JSON parameter
+        $jsonData = json_encode([
+            'firstname'      => $firstName,
+            'lastname'       => $lastName,
+            'email'          => $email,
+            'phone_number'   => $phoneNumber,
+            'address'        => $address,
+            'password'       => $hashedPassword,
+            'terms_accepted' => $termsAccepted ? 1 : 0,
+        ]);
+
         $db     = \Config\Database::connect();
-        $query  = $db->query(
-            'CALL sp_register(?, ?, ?, ?)',
-            [$firstName, $lastName, $email, $hashedPassword]
-        );
+        $query  = $db->query('CALL sp_register(?)', [$jsonData]);
         $result = $query->getRowArray();
 
         return $result ?? ['id' => 0];
