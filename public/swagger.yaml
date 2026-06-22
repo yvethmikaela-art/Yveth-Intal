@@ -1,15 +1,21 @@
 openapi: 3.0.0
 info:
   title: Mt. Grace Protect API
-  version: 1.0.0
-  description: Authentication API para sa Mt. Grace Protect — Mt. Grace Hospitals Inc.
+  version: 2.0.0
+  description: Authentication & Users/Staff Management API para sa Mt. Grace Protect — Mt. Grace Hospitals Inc.
 
 servers:
-  - url: http://localhost/user
+  - url: http://localhost
     description: Local Development Server
 
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+
 paths:
-  /registration:
+  /user/registration:
     post:
       summary: Register a new user
       description: Gumagawa ng bagong user account. Kasama ang personal info at account setup.
@@ -26,6 +32,7 @@ paths:
                 - phone_number
                 - address
                 - password
+                - confirm_password
                 - terms_accepted
               properties:
                 first_name:
@@ -49,9 +56,21 @@ paths:
                   format: password
                   minLength: 6
                   example: password123
+                confirm_password:
+                  type: string
+                  format: password
+                  example: password123
                 terms_accepted:
                   type: boolean
                   example: true
+                dept_id:
+                  type: integer
+                  example: 1
+                  nullable: true
+                branch_id:
+                  type: integer
+                  example: 1
+                  nullable: true
       responses:
         '200':
           description: User successfully registered
@@ -65,7 +84,7 @@ paths:
                     example: ok
                   id:
                     type: integer
-                    example: 12
+                    example: 1
                   message:
                     type: string
                     example: User successfully registered!
@@ -95,10 +114,10 @@ paths:
                   message:
                     type: object
 
-  /login:
+  /user/login:
     post:
       summary: Login user
-      description: Mag-login gamit ang email at password. Ibabalik ang access token na gagamitin sa protected endpoints.
+      description: Mag-login gamit ang email at password. Ibabalik ang access token.
       requestBody:
         required: true
         content:
@@ -163,10 +182,10 @@ paths:
                     type: string
                     example: Invalid email or password!
 
-  /:
+  /user:
     get:
       summary: Get all users
-      description: Ibabalik ang listahan ng lahat ng users. Kailangan ng Bearer token mula sa login.
+      description: Ibabalik ang listahan ng lahat ng users kasama ang department, branch, at last login. Kailangan ng Bearer token.
       security:
         - bearerAuth: []
       responses:
@@ -188,36 +207,43 @@ paths:
                         id:
                           type: integer
                           example: 1
-                        firstname:
+                        first_name:
                           type: string
                           example: Juan
-                        lastname:
+                        last_name:
                           type: string
                           example: Dela Cruz
                         email:
                           type: string
                           example: juan@email.com
+                        address:
+                          type: string
+                          example: Quezon City
+                        phone_number:
+                          type: string
+                          example: "09171234567"
+                        status:
+                          type: string
+                          example: Active
+                        department:
+                          type: string
+                          example: Cardiology
+                        branch:
+                          type: string
+                          example: Taguig HQ
+                        last_login:
+                          type: string
+                          example: "2026-06-22 10:00:00"
                         created_at:
                           type: string
-                          example: "2026-06-07 14:18:43"
+                          example: "2026-06-22 10:00:00"
         '401':
           description: Token missing or invalid
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: error
-                  message:
-                    type: string
-                    example: Token is required!
 
-  /{id}:
+  /user/{id}:
     get:
       summary: Get specific user
-      description: Ibabalik ang details ng isang specific na user base sa ID. Kailangan ng Bearer token.
+      description: Ibabalik ang details ng isang specific na user. Kailangan ng Bearer token.
       security:
         - bearerAuth: []
       parameters:
@@ -244,22 +270,85 @@ paths:
                       id:
                         type: integer
                         example: 1
-                      firstname:
+                      first_name:
                         type: string
                         example: Juan
-                      lastname:
+                      last_name:
                         type: string
                         example: Dela Cruz
                       email:
                         type: string
                         example: juan@email.com
-                      created_at:
+                      department:
                         type: string
-                        example: "2026-06-07 14:18:43"
+                        example: Cardiology
+                      branch:
+                        type: string
+                        example: Taguig HQ
+                      last_login:
+                        type: string
+                        example: "2026-06-22 10:00:00"
         '401':
           description: Token missing or invalid
         '404':
           description: User not found
+
+    put:
+      summary: Update user
+      description: I-update ang existing user. Kailangan ng Bearer token.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - first_name
+                - last_name
+                - email
+                - address
+                - phone_number
+                - status
+              properties:
+                first_name:
+                  type: string
+                  example: Juan
+                last_name:
+                  type: string
+                  example: Dela Cruz
+                email:
+                  type: string
+                  format: email
+                  example: juan@email.com
+                address:
+                  type: string
+                  example: Makati City
+                phone_number:
+                  type: string
+                  example: "09171234567"
+                dept_id:
+                  type: integer
+                  example: 2
+                  nullable: true
+                branch_id:
+                  type: integer
+                  example: 1
+                  nullable: true
+                status:
+                  type: string
+                  example: Active
+      responses:
+        '200':
+          description: User successfully updated
           content:
             application/json:
               schema:
@@ -267,13 +356,110 @@ paths:
                 properties:
                   status:
                     type: string
-                    example: error
+                    example: ok
                   message:
                     type: string
-                    example: User not found!
+                    example: User successfully updated!
+        '401':
+          description: Token missing or invalid
+        '404':
+          description: User not found
+        '409':
+          description: Email already exists
 
-components:
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
+  /user/{id}/delete:
+    post:
+      summary: Delete user
+      description: Tanggalin ang existing user. Kailangan ng Bearer token.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: User successfully deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  message:
+                    type: string
+                    example: User successfully deleted!
+        '401':
+          description: Token missing or invalid
+        '404':
+          description: User not found
+
+  /branches:
+    get:
+      summary: Get all branches
+      description: Ibabalik ang listahan ng lahat ng branches. Kailangan ng Bearer token.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of branches
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 1
+                        name:
+                          type: string
+                          example: Taguig HQ
+                        location:
+                          type: string
+                          example: Taguig City
+        '401':
+          description: Token missing or invalid
+
+  /departments:
+    get:
+      summary: Get all departments
+      description: Ibabalik ang listahan ng lahat ng departments. Kailangan ng Bearer token.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of departments
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 1
+                        name:
+                          type: string
+                          example: Cardiology
+        '401':
+          description: Token missing or invalid
