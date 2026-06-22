@@ -22,7 +22,7 @@ class UserModel extends Model
     }
 
     // ---------------------------------------------------------------
-    // sp_register — insert new user
+    // sp_register — insert new user (JSON parameter)
     // ---------------------------------------------------------------
     public function register(
         string $firstName,
@@ -31,20 +31,22 @@ class UserModel extends Model
         string $phoneNumber,
         string $address,
         string $password,
-        bool $termsAccepted
+        bool $termsAccepted,
+        ?int $deptId = null,
+        ?int $branchId = null
     ): array {
-        // Hash the password before storing
         $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
 
-        // Consolidate into a single JSON parameter
         $jsonData = json_encode([
-            'firstname'      => $firstName,
-            'lastname'       => $lastName,
+            'first_name'     => $firstName,
+            'last_name'      => $lastName,
             'email'          => $email,
             'phone_number'   => $phoneNumber,
             'address'        => $address,
             'password'       => $hashedPassword,
             'terms_accepted' => $termsAccepted ? 1 : 0,
+            'dept_id'        => $deptId,
+            'branch_id'      => $branchId,
         ]);
 
         $db     = \Config\Database::connect();
@@ -53,6 +55,7 @@ class UserModel extends Model
 
         return $result ?? ['id' => 0];
     }
+
     // ---------------------------------------------------------------
     // sp_login — verify email and password
     // ---------------------------------------------------------------
@@ -66,7 +69,6 @@ class UserModel extends Model
             return null;
         }
 
-        // Verify hashed password
         if (!password_verify($password, $result['password'])) {
             return null;
         }
@@ -75,29 +77,62 @@ class UserModel extends Model
     }
 
     // ---------------------------------------------------------------
-    // Get all users
+    // sp_get_users — get all users with Department, Branch, Last Login
     // ---------------------------------------------------------------
     public function getAllUsers(): array
     {
         $db    = \Config\Database::connect();
-        $query = $db->query('SELECT id, firstname, lastname, email, created_at FROM users ORDER BY id ASC');
+        $query = $db->query('CALL sp_get_users()');
 
         return $query->getResultArray();
     }
 
     // ---------------------------------------------------------------
-    // Get specific user by ID
+    // sp_get_user_by_id — get specific user
     // ---------------------------------------------------------------
     public function getUserById(int $id): array|null
     {
         $db     = \Config\Database::connect();
-        $query  = $db->query(
-            'SELECT id, firstname, lastname, email, created_at FROM users WHERE id = ?',
-            [$id]
-        );
+        $query  = $db->query('CALL sp_get_user_by_id(?)', [$id]);
         $result = $query->getRowArray();
 
         return $result ?: null;
+    }
+
+    // ---------------------------------------------------------------
+    // sp_update_user — update existing user
+    // ---------------------------------------------------------------
+    public function updateUser(
+        int $id,
+        string $firstName,
+        string $lastName,
+        string $email,
+        string $address,
+        string $phoneNumber,
+        ?int $deptId,
+        ?int $branchId,
+        string $status
+    ): int {
+        $db = \Config\Database::connect();
+        $query = $db->query(
+            'CALL sp_update_user(?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [$id, $firstName, $lastName, $email, $address, $phoneNumber, $deptId, $branchId, $status]
+        );
+        $result = $query->getRowArray();
+
+        return (int) ($result['rows_affected'] ?? 0);
+    }
+
+    // ---------------------------------------------------------------
+    // sp_delete_user — delete user
+    // ---------------------------------------------------------------
+    public function deleteUser(int $id): int
+    {
+        $db    = \Config\Database::connect();
+        $query = $db->query('CALL sp_delete_user(?)', [$id]);
+        $result = $query->getRowArray();
+
+        return (int) ($result['rows_affected'] ?? 0);
     }
 
     // ---------------------------------------------------------------

@@ -30,7 +30,10 @@ $routes->post('user/registration', 'User::registration');
 $routes->post('user/login',        'User::login');
 $routes->get('user',               'User::index');         // fetch all users
 $routes->get('user/(:num)',        'User::show/$1');       // fetch specific user
-
+$routes->put('user/(:num)',        'User::update/$1');     // update user
+$routes->post('user/(:num)/delete','User::delete/$1');     // delete user
+$routes->get('branches',           'Branch::index');       // fetch all branches
+$routes->get('departments',        'Department::index');   // fetch all departments
 if (file_exists(APPPATH . 'Config/' . ENVIRONMENT . '/Routes.php'))
 {
     require APPPATH . 'Config/' . ENVIRONMENT . '/Routes.php';
