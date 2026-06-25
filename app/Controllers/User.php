@@ -285,5 +285,71 @@ class User extends ResourceController
             'status'  => 'ok',
             'message' => 'User successfully deleted!',
         ], 200);
+    } // ---------------------------------------------------------------
+// POST /staff
+// Add new employee by admin. Requires Bearer token.
+// dept_id and branch_id are REQUIRED (admin knows these).
+// Calls: sp_check_email, sp_register
+// ---------------------------------------------------------------
+public function addEmployee()
+{
+    $userModel = new UserModel();
+    $token = $this->getValidToken($userModel);
+
+    if (!$token) {
+        return $this->respond([
+            'status'  => 'error',
+            'message' => 'Token is required!',
+        ], 401);
     }
+
+    $json = $this->request->getJSON(true);
+
+    $rules = [
+        'first_name'      => 'required|min_length[2]',
+        'last_name'       => 'required|min_length[2]',
+        'email'           => 'required|valid_email',
+        'phone_number'    => 'required|min_length[7]',
+        'address'         => 'required|min_length[5]',
+        'password'        => 'required|min_length[6]',
+        'confirm_password'=> 'required|matches[password]',
+        'terms_accepted'  => 'required',
+        'dept_id'         => 'required|integer',
+        'branch_id'       => 'required|integer',
+    ];
+
+    if (!$this->validateData($json ?? [], $rules)) {
+        return $this->respond([
+            'status'  => 'error',
+            'message' => $this->validator->getErrors(),
+        ], 422);
+    }
+
+    $existing = $userModel->checkEmail($json['email']);
+
+    if ($existing) {
+        return $this->respond([
+            'status'  => 'error',
+            'message' => 'Email already exists!',
+        ], 409);
+    }
+
+    $result = $userModel->register(
+        $json['first_name'],
+        $json['last_name'],
+        $json['email'],
+        $json['phone_number'],
+        $json['address'],
+        $json['password'],
+        (bool) $json['terms_accepted'],
+        (int) $json['dept_id'],
+        (int) $json['branch_id']
+    );
+
+    return $this->respond([
+        'status'  => 'ok',
+        'id'      => $result['id'],
+        'message' => 'Employee successfully added!',
+    ], 200);
+}
 }

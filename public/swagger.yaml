@@ -463,3 +463,83 @@ paths:
                           example: Cardiology
         '401':
           description: Token missing or invalid
+          /staff:
+    post:
+      summary: Add new employee (admin only)
+      description: Magdagdag ng bagong employee. Kailangan ng Bearer token. dept_id at branch_id ay required.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - first_name
+                - last_name
+                - email
+                - phone_number
+                - address
+                - password
+                - confirm_password
+                - terms_accepted
+                - dept_id
+                - branch_id
+              properties:
+                first_name:
+                  type: string
+                  example: Juan
+                last_name:
+                  type: string
+                  example: Dela Cruz
+                email:
+                  type: string
+                  format: email
+                  example: juan@email.com
+                phone_number:
+                  type: string
+                  example: "09171234567"
+                address:
+                  type: string
+                  example: Taguig City
+                password:
+                  type: string
+                  format: password
+                  example: password123
+                confirm_password:
+                  type: string
+                  format: password
+                  example: password123
+                terms_accepted:
+                  type: boolean
+                  example: true
+                dept_id:
+                  type: integer
+                  example: 2
+                branch_id:
+                  type: integer
+                  example: 1
+      responses:
+        '200':
+          description: Employee successfully added
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  id:
+                    type: integer
+                    example: 1
+                  message:
+                    type: string
+                    example: Employee successfully added!
+        '401':
+          description: Token missing or invalid
+        '409':
+          description: Email already exists
+        '422':
+          description: Validation error

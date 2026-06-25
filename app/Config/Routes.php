@@ -28,6 +28,7 @@ $routes->get('dashboard', 'Dashboard::index', ['filter' => 'auth']);
 // --------------------------------------------------------------------
 $routes->post('user/registration', 'User::registration');
 $routes->post('user/login',        'User::login');
+$routes->post('staff', 'User::addEmployee');
 $routes->get('user',               'User::index');         // fetch all users
 $routes->get('user/(:num)',        'User::show/$1');       // fetch specific user
 $routes->put('user/(:num)',        'User::update/$1');     // update user
